@@ -1,0 +1,8 @@
+#+title: tagvolumes
+* tagvolumes
+  A simple Clojure boot script for tagging named volumes.
+* Run...
+  Edit src/tagvolumes/core.clj to your liking and run
+  #+BEGIN_SRC shell
+  boot run
+  #+END_SRC

@@ -1,3 +1,13 @@
+# Emacs artifacts
+*~
+\#*
+.\#*
+
+# Vi(m) artifacts
+*.swp
+
+# Clojure/Java artifacts
+.idea
 pom.xml
 pom.xml.asc
 *.jar
