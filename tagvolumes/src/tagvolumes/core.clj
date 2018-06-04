@@ -2,8 +2,19 @@
   (:require [amazonica.aws.ec2 :as ec2])
   (:gen-class))
 
-(def creds {:profile "dev"
-            :region "us-east-1"})
+(def regions ["us-east-1"
+              "ap-southeast-2" "ap-northeast-1"
+              "eu-west-1" "eu-central-1"])
+
+(defn creds
+  [env]
+  (if (= env "prod")
+    (vec
+     (for [region regions]
+       {:profile env
+        :endpoint region}))
+    [{:profile env
+      :endpoint "us-east-1"}]))
 
 (defn get-toku-filter
   []
@@ -16,12 +27,12 @@
           (str x "-rs1-" y)))))))
 
 (defn- aws-find-volumes
-  [credentials]
+  [credentials filter]
   (second
    (first
     (ec2/describe-volumes
      credentials
-     :filters [{:name "tag:Name" :values (get-toku-filter)}]))))
+     :filters [{:name "tag:Name" :values filter}]))))
 
 (defn find-volumes
   [vol-list]
@@ -34,19 +45,22 @@
         (:tags x))))}))
 
 (defn create-tags
-  []
-  (println "I am here...")
-  (let [volumes (aws-find-volumes creds)]
+  [cred]
+  (let [volumes (aws-find-volumes cred (get-toku-filter))]
     (doseq [vol (find-volumes volumes)]
       (let [volume-id (:volume-id vol)
             key-name (:key-name vol)]
         (println "Adding tag volume-id: " volume-id
                  "\tkey-name: " key-name)
-        (ec2/create-tags {:resources [volume-id]
-                          :tags [{:key "key-name"
-                                  :value key-name}]})))))
+        (ec2/create-tags
+         cred
+         {:resources [volume-id]
+          :tags [{:key "key-name"
+                  :value key-name}]})))))
 
 (defn -main
   "Entry point for boot script. Runs create-tags."
   [& args]
-  (create-tags))
+  (let [env (first args)]
+    (doseq [cred (creds env)]
+      (create-tags cred))))
