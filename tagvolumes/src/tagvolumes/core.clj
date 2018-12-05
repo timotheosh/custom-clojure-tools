@@ -6,6 +6,10 @@
               "ap-southeast-2" "ap-northeast-1"
               "eu-west-1" "eu-central-1"])
 
+(def envs {:dev "inindca.com" :test "inintca.com" :prod "mypurecloud.com"
+           :prod-apse2 "mypurecloud.com.au" :prod-apne1 "mypurecloud.jp"
+           :prod-euw1 "mypurecloud.ie" :prod-euc1 "mypurecloud.de"})
+
 (defn creds
   [env]
   (if (= env "prod")
@@ -26,6 +30,18 @@
         (for [y (range 1 (inc cluster-number))]
           (str x "-rs1-" y)))))))
 
+(defn get-cluster-filter
+  "Returns a flat vector suitable for an AWS EC2 filter.
+    cluster-names must be a sequence,
+    cluster size must be equal to the number of nodes in a cluster
+      and assumes a sequential integer beginning with 1."
+  [cluster-names cluster-size]
+  (vec
+   (flatten
+    (for [x cluster-names]
+      (for [y (range 1 (inc cluster-size))]
+        (str x "-" y))))))
+
 (defn- aws-find-volumes
   [credentials filter]
   (second
@@ -45,8 +61,8 @@
         (:tags x))))}))
 
 (defn create-tags
-  [cred]
-  (let [volumes (aws-find-volumes cred (get-toku-filter))]
+  [cred filter]
+  (let [volumes (aws-find-volumes cred filter)]
     (doseq [vol (find-volumes volumes)]
       (let [volume-id (:volume-id vol)
             key-name (:key-name vol)]
